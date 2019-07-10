@@ -1,25 +1,25 @@
 provider "aws" {
   access_key = "${var.aws_access_key}"
   secret_key = "${var.aws_secret_key}"
-  region     = "eu-central-1"
+  region     = "${var.aws_region}"
 }
 
 resource "aws_vpc" "terraform_vpc" {
-  cidr_block           = "10.0.0.0/16"
+  cidr_block           = "192.168.0.0/22"
   enable_dns_hostnames = true
 
   tags = {
     Name = "terraform_main"
   }
 }
-
+   
 resource "aws_internet_gateway" "gw" {
   vpc_id = "${aws_vpc.terraform_vpc.id}"
 }
 
 resource "aws_subnet" "terraform_subnet" {
   vpc_id                  = "${aws_vpc.terraform_vpc.id}"
-  cidr_block              = "10.0.0.0/24"
+  cidr_block              = "192.168.0.0/24"
   map_public_ip_on_launch = true
   depends_on              = ["aws_internet_gateway.gw"]
 
@@ -64,7 +64,7 @@ resource "aws_key_pair" "terraform_key" {
 }
 
 resource "aws_instance" "ansible" {
-  ami                    = "${var.ec2_ami}"
+  ami                    = "${var.ec2_ami_eu_west_1}"
   instance_type          = "t2.micro"
   subnet_id              = "${aws_subnet.terraform_subnet.id}"
   key_name               = "terraform_key"
@@ -75,6 +75,8 @@ resource "aws_instance" "ansible" {
   }
 
   connection {
+    type = "ssh"
+    host = self.public_ip
     user        = "ec2-user"
     private_key = "${file(var.myprivate_key)}"
   }
@@ -96,7 +98,7 @@ resource "aws_instance" "ansible" {
 }
 
 resource "aws_instance" "elk" {
-  ami                    = "${var.ec2_ami}"
+  ami                    = "${var.ec2_ami_eu_west_1}"
   instance_type          = "t2.micro"
   subnet_id              = "${aws_subnet.terraform_subnet.id}"
   key_name               = "terraform_key"
@@ -107,6 +109,8 @@ resource "aws_instance" "elk" {
   }
 
   connection {
+    type = "ssh"
+    host = self.public_ip
     user        = "ec2-user"
     private_key = "${file(var.myprivate_key)}"
   }
